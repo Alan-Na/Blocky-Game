@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
-import pygame
+from __future__ import annotations
+
+from typing import Any
+import importlib
+import importlib.util
+
+_pygame_spec = importlib.util.find_spec('pygame')
+if _pygame_spec is None:
+    import pygame_stub as pygame  # type: ignore[no-redef]
+else:
+    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
 
 from actions import Action
 from block import Block, _block_to_squares

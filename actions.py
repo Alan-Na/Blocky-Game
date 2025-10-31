@@ -1,5 +1,12 @@
 from __future__ import annotations
-import pygame
+import importlib
+import importlib.util
+
+_pygame_spec = importlib.util.find_spec('pygame')
+if _pygame_spec is None:
+    import pygame_stub as pygame  # type: ignore[no-redef]
+else:
+    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
 from block import Block, ROT_CW, ROT_CCW, SWAP_HORZ, SWAP_VERT
 
 

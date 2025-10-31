@@ -1,6 +1,13 @@
 from __future__ import annotations
+import importlib
+import importlib.util
 import random
-import pygame
+
+_pygame_spec = importlib.util.find_spec('pygame')
+if _pygame_spec is None:
+    import pygame_stub as pygame  # type: ignore[no-redef]
+else:
+    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
 
 from block import Block
 from goal import Goal, generate_goals

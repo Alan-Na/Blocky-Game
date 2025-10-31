@@ -92,11 +92,14 @@ object defined in `actions.py`.【F:actions.py†L100-L158】
   colours for scoring calculations and AI lookahead.【F:goal.py†L43-L126】
 
 ## Testing
-Automated tests rely on pygame; if it is not installed, `pytest example_tests.py`
-will fail during import. Once pygame is available you can run:
+The repository bundles a lightweight `pygame_stub` so that logic tests can run
+in headless environments where the real dependency is unavailable. You can run
+the provided suites immediately:
 ```bash
 pytest example_tests.py
 pytest a2_test.py
 ```
-These suites exercise the tree operations, goal logic, and player behaviours
-implemented in the modules above.【F:goal.py†L21-L126】【F:player.py†L1-L250】
+Installing the actual pygame package unlocks the interactive renderer, but is
+not required for these automated checks. The suites exercise the tree
+operations, goal logic, and player behaviours implemented in the modules
+above.【F:goal.py†L21-L126】【F:player.py†L1-L250】
