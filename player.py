@@ -1,13 +1,6 @@
 from __future__ import annotations
-import importlib
-import importlib.util
 import random
-
-_pygame_spec = importlib.util.find_spec('pygame')
-if _pygame_spec is None:
-    import pygame_stub as pygame  # type: ignore[no-redef]
-else:
-    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
+import pygame
 
 from block import Block
 from goal import Goal, generate_goals
@@ -16,9 +9,15 @@ from actions import Action, KEY_ACTION, ROTATE_CLOCKWISE, \
     ROTATE_COUNTER_CLOCKWISE, \
     SWAP_HORIZONTAL, SWAP_VERTICAL, SMASH, PASS, PAINT, COMBINE
 
-
-_ACTION_SET = [ROTATE_CLOCKWISE, ROTATE_COUNTER_CLOCKWISE,
-               SWAP_HORIZONTAL, SWAP_VERTICAL, SMASH, PAINT, COMBINE]
+COMPUTER_ACTIONS = [
+    ROTATE_CLOCKWISE,
+    ROTATE_COUNTER_CLOCKWISE,
+    SWAP_HORIZONTAL,
+    SWAP_VERTICAL,
+    SMASH,
+    COMBINE,
+    PAINT
+]
 
 
 def create_players(num_human: int, num_random: int, smart_players: list[int]) \
@@ -39,22 +38,26 @@ def create_players(num_human: int, num_random: int, smart_players: list[int]) \
 
     Each player is assigned a random goal.
     """
-    total_players = num_human + num_random + len(smart_players)
-    goals = generate_goals(total_players)
+    total = num_human + num_random + len(smart_players)
+    goals = generate_goals(total)
 
     players: list[Player] = []
     goal_index = 0
+    next_id = 0
 
     for _ in range(num_human):
-        players.append(HumanPlayer(len(players), goals[goal_index]))
+        players.append(HumanPlayer(next_id, goals[goal_index]))
+        next_id += 1
         goal_index += 1
 
     for _ in range(num_random):
-        players.append(RandomPlayer(len(players), goals[goal_index]))
+        players.append(RandomPlayer(next_id, goals[goal_index]))
+        next_id += 1
         goal_index += 1
 
     for difficulty in smart_players:
-        players.append(SmartPlayer(len(players), goals[goal_index], difficulty))
+        players.append(SmartPlayer(next_id, goals[goal_index], difficulty))
+        next_id += 1
         goal_index += 1
 
     return players
@@ -80,58 +83,18 @@ def _get_block(block: Block, location: tuple[int, int], level: int) -> \
     """
     x, y = location
     bx, by = block.position
-    size = block.size
-
-    if not (bx <= x < bx + size and by <= y < by + size):
+    if not (bx <= x < bx + block.size and by <= y < by + block.size):
         return None
 
     if block.level == level or len(block.children) == 0:
         return block
 
-    half = block.child_size()
-
-    if x < bx + half:
-        if y < by + half:
-            child = block.children[1]
-        else:
-            child = block.children[2]
-    else:
-        if y < by + half:
-            child = block.children[0]
-        else:
-            child = block.children[3]
-
-    result = _get_block(child, location, level)
-    if result is None:
-        return child
-    return result
-
-
-def _collect_blocks(block: Block) -> list[Block]:
-    """Return a list of all blocks in the tree rooted at <block>."""
-    blocks = [block]
     for child in block.children:
-        blocks.extend(_collect_blocks(child))
-    return blocks
+        result = _get_block(child, location, level)
+        if result is not None:
+            return result
 
-
-def _find_in_copy(board: Block, original: Block) -> Block | None:
-    """Return the block in <board> corresponding to <original>."""
-    return _get_block(board, original.position, original.level)
-
-
-def _valid_moves(board: Block, goal_colour: tuple[int, int, int]) -> \
-        list[tuple[Action, Block]]:
-    """Return all valid moves that can be performed on <board>."""
-    moves: list[tuple[Action, Block]] = []
-    for candidate in _collect_blocks(board):
-        for action in _ACTION_SET:
-            board_copy = board.create_copy()
-            copy_block = _find_in_copy(board_copy, candidate)
-            if copy_block is not None and action.apply(
-                    copy_block, {'colour': goal_colour}):
-                moves.append((action, candidate))
-    return moves
+    return block
 
 
 class Player:
@@ -303,13 +266,16 @@ class RandomPlayer(ComputerPlayer):
         if not self._proceed:
             return None
 
-        valid_moves = _valid_moves(board, self.goal.colour)
         self._proceed = False
 
-        if not valid_moves:
+        moves = _valid_moves(board, self.goal.colour)
+        if not moves:
             return PASS, board
 
-        return random.choice(valid_moves)
+        action, path = random.choice(moves)
+        target = _block_from_path(board, path)
+
+        return action, target
 
 
 class SmartPlayer(ComputerPlayer):
@@ -333,7 +299,7 @@ class SmartPlayer(ComputerPlayer):
         Preconditions:
         - difficulty >= 0
         """
-        ComputerPlayer.__init__(self, player_id, goal)
+        super().__init__(player_id, goal)
         self._num_test = max(1, difficulty)
 
     def generate_move(self, board: Block) -> \
@@ -351,32 +317,91 @@ class SmartPlayer(ComputerPlayer):
         if not self._proceed:
             return None
 
-        valid_moves = _valid_moves(board, self.goal.colour)
+        self._proceed = False
+
         current_score = self.goal.score(board)
-        best_move: tuple[Action, Block] | None = None
+        moves = _valid_moves(board, self.goal.colour)
+
+        if not moves:
+            return PASS, board
+
+        best_move: tuple[Action, tuple[int, ...]] | None = None
         best_score = current_score
 
-        if valid_moves:
-            num_to_test = min(len(valid_moves), self._num_test)
-            candidates = random.sample(valid_moves, num_to_test)
+        for _ in range(self._num_test):
+            action, path = random.choice(moves)
+            board_copy = board.create_copy()
+            block_copy = _block_from_path(board_copy, path)
+            success = action.apply(block_copy, {'colour': self.goal.colour})
+            if not success:
+                continue
 
-            for action, target_block in candidates:
-                board_copy = board.create_copy()
-                copy_block = _find_in_copy(board_copy, target_block)
-                if copy_block is None:
-                    continue
-
-                if action.apply(copy_block, {'colour': self.goal.colour}):
-                    score = self.goal.score(board_copy)
-                    if score > best_score:
-                        best_score = score
-                        best_move = (action, target_block)
-
-        self._proceed = False
+            score = self.goal.score(board_copy)
+            if score > best_score:
+                best_score = score
+                best_move = (action, path)
 
         if best_move is None:
             return PASS, board
-        return best_move
+
+        action, path = best_move
+        target = _block_from_path(board, path)
+        return action, target
+
+
+def _valid_moves(board: Block,
+                 colour: tuple[int, int, int]) -> list[tuple[Action, tuple[int, ...]]]:
+    """Return all valid non-pass moves available on <board>."""
+    candidates: list[tuple[Action, tuple[int, ...]]] = []
+
+    for block, path in _blocks_with_paths(board):
+        for action in COMPUTER_ACTIONS:
+            if not _is_potential_move(action, block, colour):
+                continue
+
+            board_copy = board.create_copy()
+            target_copy = _block_from_path(board_copy, path)
+            if action.apply(target_copy, {'colour': colour}):
+                candidates.append((action, path))
+
+    return candidates
+
+
+def _is_potential_move(action: Action, block: Block,
+                       colour: tuple[int, int, int]) -> bool:
+    """Quick checks to skip obviously invalid actions."""
+    if action in (ROTATE_CLOCKWISE, ROTATE_COUNTER_CLOCKWISE,
+                  SWAP_HORIZONTAL, SWAP_VERTICAL):
+        return len(block.children) != 0
+    if action is SMASH:
+        return block.smashable()
+    if action is COMBINE:
+        return len(block.children) != 0
+    if action is PAINT:
+        return (len(block.children) == 0 and block.level == block.max_depth
+                and block.colour != colour)
+    return True
+
+
+def _blocks_with_paths(block: Block) -> list[tuple[Block, tuple[int, ...]]]:
+    """Return all blocks paired with their path from <block>."""
+    result: list[tuple[Block, tuple[int, ...]]] = []
+
+    def helper(current: Block, path: tuple[int, ...]) -> None:
+        result.append((current, path))
+        for index, child in enumerate(current.children):
+            helper(child, path + (index,))
+
+    helper(block, ())
+    return result
+
+
+def _block_from_path(block: Block, path: tuple[int, ...]) -> Block:
+    """Return the block reached by following <path> from <block>."""
+    current = block
+    for index in path:
+        current = current.children[index]
+    return current
 
 
 if __name__ == '__main__':

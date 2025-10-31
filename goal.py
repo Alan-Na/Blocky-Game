@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 import random
 from block import Block
 from settings import colour_name, COLOUR_LIST
@@ -18,8 +19,7 @@ def generate_goals(num_goals: int) -> list[Goal]:
         return []
 
     goal_type = random.choice([PerimeterGoal, BlobGoal])
-    colours = random.sample(COLOUR_LIST, num_goals)
-
+    colours = random.sample(COLOUR_LIST, k=num_goals)
     return [goal_type(colour) for colour in colours]
 
 
@@ -37,26 +37,27 @@ def flatten(block: Block) -> list[list[tuple[int, int, int]]]:
 
     L[0][0] represents the unit cell in the upper left corner of the Block.
     """
-    size = 2 ** (block.max_depth - block.level)
-    grid: list[list[tuple[int, int, int]]] = [
-        [block.colour for _ in range(size)] for _ in range(size)
-    ]
+    span = 2 ** (block.max_depth - block.level)
 
-    def _fill(b: Block, x: int, y: int, span: int) -> None:
-        if len(b.children) == 0:
-            for i in range(x, x + span):
-                for j in range(y, y + span):
-                    grid[i][j] = b.colour
+    if len(block.children) == 0:
+        assert block.colour is not None
+        return [[block.colour for _ in range(span)] for _ in range(span)]
+
+    half = span // 2
+    flattened_children = [flatten(child) for child in block.children]
+
+    combined: list[list[tuple[int, int, int]]] = []
+    for col in range(span):
+        if col < half:
+            top = flattened_children[1][col]
+            bottom = flattened_children[2][col]
         else:
-            half = span // 2
-            _fill(b.children[1], x, y, half)
-            _fill(b.children[0], x + half, y, half)
-            _fill(b.children[2], x, y + half, half)
-            _fill(b.children[3], x + half, y + half, half)
+            child_col = col - half
+            top = flattened_children[0][child_col]
+            bottom = flattened_children[3][child_col]
+        combined.append(top + bottom)
 
-    _fill(block, 0, 0, size)
-
-    return grid
+    return combined
 
 
 class Goal:
@@ -103,19 +104,24 @@ class PerimeterGoal(Goal):
         count twice toward the score.
         """
         grid = flatten(board)
-        size = len(grid)
 
+        if not grid:
+            return 0
+
+        width = len(grid)
+        height = len(grid[0])
         score = 0
-        for x in range(size):
+
+        for x in range(width):
             if grid[x][0] == self.colour:
                 score += 1
-            if grid[x][size - 1] == self.colour:
+            if grid[x][height - 1] == self.colour:
                 score += 1
 
-        for y in range(size):
+        for y in range(height):
             if grid[0][y] == self.colour:
                 score += 1
-            if grid[size - 1][y] == self.colour:
+            if grid[width - 1][y] == self.colour:
                 score += 1
 
         return score
@@ -123,8 +129,7 @@ class PerimeterGoal(Goal):
     def description(self) -> str:
         """Return a description of this goal.
         """
-        colour = colour_name(self.colour)
-        return (f'Aim for {colour} along the perimeter; corners count twice.')
+        return f'Perimeter goal: maximize {colour_name(self.colour)} on edge cells.'
 
 
 class BlobGoal(Goal):
@@ -141,17 +146,17 @@ class BlobGoal(Goal):
         unit cells in the largest connected blob within this Block.
         """
         grid = flatten(board)
-        size = len(grid)
-        visited = [[-1 for _ in range(size)] for _ in range(size)]
+        if not grid:
+            return 0
 
+        visited = [[-1 for _ in column] for column in grid]
         best = 0
-        for x in range(size):
-            for y in range(size):
-                if visited[x][y] == -1 and grid[x][y] == self.colour:
-                    blob_size = self._undiscovered_blob_size((x, y), grid,
-                                                             visited)
-                    if blob_size > best:
-                        best = blob_size
+
+        for x in range(len(grid)):
+            for y in range(len(grid[x])):
+                if visited[x][y] == -1:
+                    size = self._undiscovered_blob_size((x, y), grid, visited)
+                    best = max(best, size)
 
         return best
 
@@ -177,9 +182,12 @@ class BlobGoal(Goal):
         If <pos> is out of bounds for <board>, return 0.
         """
         x, y = pos
-        if x < 0 or y < 0:
+        width = len(board)
+        if width == 0:
             return 0
-        if x >= len(board) or y >= len(board):
+        height = len(board[0])
+
+        if not (0 <= x < width and 0 <= y < height):
             return 0
 
         if visited[x][y] != -1:
@@ -191,16 +199,17 @@ class BlobGoal(Goal):
 
         visited[x][y] = 1
         size = 1
-        for neighbour in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]:
-            size += self._undiscovered_blob_size(neighbour, board, visited)
+
+        neighbours = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+        for nx, ny in neighbours:
+            size += self._undiscovered_blob_size((nx, ny), board, visited)
 
         return size
 
     def description(self) -> str:
         """Return a description of this goal.
         """
-        colour = colour_name(self.colour)
-        return f'Build the largest connected blob of {colour} blocks.'
+        return f'Blob goal: build the largest {colour_name(self.colour)} region.'
 
 
 if __name__ == '__main__':

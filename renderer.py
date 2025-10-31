@@ -141,14 +141,6 @@ class Renderer:
             self._status_rect.top + (self._status_rect.height - self._font.get_height()) // 2
         )
 
-        self._board_background = self._create_board_background()
-        self._scoreboard_base = self._create_panel_surface(
-            (self._scoreboard_rect.width, self._scoreboard_rect.height)
-        )
-        self._instruction_surface = self._create_instruction_surface(
-            instruction_width, instruction_height
-        )
-
         self._action_icons = {}
         self._icon_actions = {}
         palette = [ACCENT_COLOUR] + COLOUR_LIST
@@ -167,6 +159,14 @@ class Renderer:
             self._default_icon = next(iter(self._action_icons.values()))
         else:
             self._default_icon = self._create_fallback_icon()
+
+        self._board_background = self._create_board_background()
+        self._scoreboard_base = self._create_panel_surface(
+            (self._scoreboard_rect.width, self._scoreboard_rect.height)
+        )
+        self._instruction_surface = self._create_instruction_surface(
+            instruction_width, instruction_height
+        )
 
     def _create_board_background(self) -> pygame.Surface:
         surface = _create_vertical_gradient(
