@@ -1,26 +1,3 @@
-"""CSC148 Assignment 2
-
-CSC148 Winter 2024
-Department of Computer Science,
-University of Toronto
-
-This code is provided solely for the personal and private use of
-students taking the CSC148 course at the University of Toronto.
-Copying for purposes other than this use is expressly prohibited.
-All forms of distribution of this code, whether as given or with
-any changes, are expressly prohibited.
-
-Authors: Diane Horton, David Liu, Mario Badr, Sophia Huynh, Misha Schwartz,
-Jaisie Sin, and Joonho Kim
-
-All of the files in this directory and all subdirectories are:
-Copyright (c) Diane Horton, David Liu, Mario Badr, Sophia Huynh,
-Misha Schwartz, Jaisie Sin, and Joonho Kim
-
-Module Description:
-
-This file contains the hierarchy of Goal classes and related helper functions.
-"""
 from __future__ import annotations
 import random
 from block import Block

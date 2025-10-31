@@ -1,35 +1,6 @@
-"""CSC148 Assignment 2
-
-CSC148 Winter 2024
-Department of Computer Science,
-University of Toronto
-
-This code is provided solely for the personal and private use of
-students taking the CSC148 course at the University of Toronto.
-Copying for purposes other than this use is expressly prohibited.
-All forms of distribution of this code, whether as given or with
-any changes, are expressly prohibited.
-
-Authors: Diane Horton, David Liu, Mario Badr, Sophia Huynh, Misha Schwartz,
-Jaisie Sin, and Joonho Kim
-
-All of the files in this directory and all subdirectories are:
-Copyright (c) Diane Horton, David Liu, Mario Badr, Sophia Huynh,
-Misha Schwartz, Jaisie Sin, and Joonho Kim
-
-Module Description:
-
-This file contains the class that "renders" the image of our game.
-"""
 from typing import Any, cast
-import importlib
-import importlib.util
 
-_pygame_spec = importlib.util.find_spec('pygame')
-if _pygame_spec is None:
-    import pygame_stub as pygame  # type: ignore[no-redef]
-else:
-    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
+import pygame
 
 from actions import Action, KEY_ACTION
 from settings import (BACKGROUND_COLOUR, TEXT_COLOUR, OUTLINE_THICKNESS,
