@@ -23,7 +23,16 @@ This file contains the different game states for the Blocky game.
 """
 
 from __future__ import annotations
-import pygame
+
+from typing import Any
+import importlib
+import importlib.util
+
+_pygame_spec = importlib.util.find_spec('pygame')
+if _pygame_spec is None:
+    import pygame_stub as pygame  # type: ignore[no-redef]
+else:
+    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
 
 from actions import Action
 from block import Block, _block_to_squares
@@ -154,6 +163,27 @@ class MainState(GameState):
 
         return move_successful
 
+    def scoreboard_entries(self) -> list[dict[str, Any]]:
+        """Return data describing the current scoreboard."""
+        entries: list[dict[str, Any]] = []
+        for player in self._data.players:
+            goal_score, penalty = self._data.calculate_score(player.id)
+            player_type = player.__class__.__name__.replace('Player', '') or 'Human'
+            entries.append({
+                'id': player.id,
+                'type': player_type,
+                'goal': player.goal.description(),
+                'goal_colour': player.goal.colour,
+                'raw_score': goal_score,
+                'penalty': penalty,
+                'net_score': goal_score - penalty
+            })
+        return entries
+
+    def turn_summary(self) -> tuple[int, int]:
+        """Return the current turn index and the total maximum turns."""
+        return self._turn, self._data.max_turns
+
     def process_event(self, event: pygame.event.Event) -> None:
         self._current_player().process_event(event)
 
@@ -191,9 +221,16 @@ class MainState(GameState):
         p = self._current_player()
         p_type = str(p.__class__)
         p_type = p_type[p_type.index('.') + 1: -2]
-        status = f'Turn {self._turn} | Player {p.id} ({p_type}) | ' \
-                 f'Score {self._current_score} | {p.goal.description()}'
+        status = (f'Active: P{p.id} ({p_type}) | Net {self._current_score:,} | '
+                  f'{p.goal.description()}')
         renderer.draw_status(status)
+
+        renderer.draw_scoreboard(
+            self.scoreboard_entries(),
+            p.id,
+            self._turn,
+            self._data.max_turns
+        )
 
 
 class AnimateMoveState(GameState):
@@ -254,25 +291,47 @@ class AnimateMoveState(GameState):
         status = f'Player {self._player_id} is {action.message}'
         renderer.draw_status(status)
 
+        if isinstance(self._parent, MainState):
+            turn, max_turns = self._parent.turn_summary()
+            renderer.draw_scoreboard(
+                self._parent.scoreboard_entries(),
+                self._player_id,
+                turn,
+                max_turns
+            )
+
 
 class GameOverState(GameState):
     """A GameState that is displayed when the game is over.
 
     Private Instance Attributes:
-    - _scores: A list of tuples containing each player ID, goal score, and penalty
+    - _board: A cached copy of the final board as drawable squares.
+    - _entries: Prepared scoreboard entries for the final standings.
     - _winner: The ID of the winning player
     """
-    _scores: list[tuple[int, int, int]]
+    _board: list[tuple[tuple[int, int, int], tuple[int, int], int]]
+    _entries: list[dict[str, Any]]
     _winner: int
 
     def __init__(self, data: GameData) -> None:
-        """Initialize this GameState.
-        """
-        self._scores = []
-        for p in data.players:
-            goal_score, penalty = data.calculate_score(p.id)
-            self._scores.append((p.id, goal_score, penalty))
-        self._winner = max(self._scores, key=lambda item: item[1] - item[2])[0]
+        """Initialize this GameState."""
+        self._board = _block_to_squares(data.board)
+        self._entries = []
+        for player in data.players:
+            goal_score, penalty = data.calculate_score(player.id)
+            player_type = player.__class__.__name__.replace('Player', '') or 'Human'
+            self._entries.append({
+                'id': player.id,
+                'type': player_type,
+                'goal': player.goal.description(),
+                'goal_colour': player.goal.colour,
+                'raw_score': goal_score,
+                'penalty': penalty,
+                'net_score': goal_score - penalty
+            })
+
+        self._entries.sort(key=lambda item: int(item['net_score']), reverse=True)
+        self._winner = int(self._entries[0]['id']) if self._entries else -1
 
     def process_event(self, event: pygame.event.Event) -> None:
         # Simply ignore the event
@@ -283,18 +342,16 @@ class GameOverState(GameState):
         return self
 
     def render(self, renderer: Renderer) -> None:
-        x = 10
-        y = 10
-        for t in self._scores:
-            player_id, goal_score, penalty = t
-            score = goal_score - penalty
-            text = f'Player {player_id}\'s final score is {goal_score} - ' \
-                   f'{penalty} = {score}'
-
-            renderer.print(text, x, y)
-            y += renderer.text_height()
-
-        renderer.print(f'Player {self._winner} wins!', x, y)
+        renderer.draw_board(self._board)
+        renderer.draw_scoreboard(
+            self._entries,
+            self._winner,
+            None,
+            None,
+            title='Final Standings',
+            subtitle=f'Winner: Player {self._winner}' if self._winner >= 0 else None
+        )
+        renderer.draw_status('Game complete. Close the window to exit.')
 
 
 if __name__ == '__main__':

@@ -49,8 +49,17 @@ def _block_to_squares(board: Block) -> list[tuple[tuple[int, int, int],
 
     The order of the tuples does not matter.
     """
-    # TODO: Implement this function
-    return []  # FIXME
+    squares: list[tuple[tuple[int, int, int], tuple[int, int], int]] = []
+
+    def _helper(block: Block) -> None:
+        if len(block.children) == 0:
+            squares.append((block.colour, block.position, block.size))
+        else:
+            for child in block.children:
+                _helper(child)
+
+    _helper(board)
+    return squares
 
 
 def generate_board(max_depth: int, size: int) -> Block:
@@ -222,7 +231,14 @@ class Block:
         <position> is the (x, y) coordinates of the upper-left corner of this
         Block.
         """
-        # TODO: Implement this method
+        self.position = position
+
+        if len(self.children) == 0:
+            return
+
+        positions = self.children_positions()
+        for child, child_position in zip(self.children, positions):
+            child._update_children_positions(child_position)
 
     def smashable(self) -> bool:
         """Return True iff this block can be smashed.
@@ -274,7 +290,27 @@ class Block:
         >>> b1.max_depth == max_depth
         True
         """
-        # TODO: Implement this method
+        if not self.smashable():
+            return False
+
+        self.colour = None
+        self.children = []
+
+        size = self.child_size()
+        positions = self.children_positions()
+        level = self.level + 1
+
+        for position in positions:
+            colour = random.choice(COLOUR_LIST)
+            child = Block(position, size, colour, level, self.max_depth)
+            self.children.append(child)
+
+        for child in self.children:
+            if (child.level < child.max_depth
+                    and random.random() < math.exp(-0.25 * child.level)):
+                child.smash()
+
+        return True
 
     def swap(self, direction: int) -> bool:
         """Swap the child Blocks of this Block.
@@ -288,7 +324,18 @@ class Block:
         Precondition:
         - <direction> is either (SWAP_VERT, SWAP_HORZ)
         """
-        # TODO: Implement this method
+        if len(self.children) == 0:
+            return False
+
+        if direction == SWAP_VERT:
+            self.children[0], self.children[3] = self.children[3], self.children[0]
+            self.children[1], self.children[2] = self.children[2], self.children[1]
+        else:
+            self.children[0], self.children[1] = self.children[1], self.children[0]
+            self.children[3], self.children[2] = self.children[2], self.children[3]
+
+        self._update_children_positions(self.position)
+        return True
 
     def rotate(self, direction: int) -> bool:
         """Rotate this Block and all its descendents.
@@ -302,7 +349,21 @@ class Block:
         Preconditions:
         - direction in (ROT_CW, ROT_CCW)
         """
-        # TODO: Implement this method
+        if len(self.children) == 0:
+            return False
+
+        for child in self.children:
+            child.rotate(direction)
+
+        if direction == ROT_CW:
+            self.children = [self.children[1], self.children[2],
+                             self.children[3], self.children[0]]
+        else:
+            self.children = [self.children[3], self.children[0],
+                             self.children[1], self.children[2]]
+
+        self._update_children_positions(self.position)
+        return True
 
     def paint(self, colour: tuple[int, int, int]) -> bool:
         """Change this Block's colour iff it is a leaf at a level of max_depth
@@ -310,7 +371,15 @@ class Block:
 
         Return True iff this Block's colour was changed.
         """
-        # TODO: Implement this method
+        if len(self.children) != 0:
+            return False
+        if self.level != self.max_depth:
+            return False
+        if self.colour == colour:
+            return False
+
+        self.colour = colour
+        return True
 
     def combine(self) -> bool:
         """Turn this Block into a leaf based on the majority colour of its
@@ -326,7 +395,28 @@ class Block:
 
         Return True iff this Block was turned into a leaf node.
         """
-        # TODO: Implement this method
+        if len(self.children) == 0:
+            return False
+
+        colours = [child.colour for child in self.children]
+        if any(colour is None for colour in colours):
+            return False
+
+        counts: dict[tuple[int, int, int], int] = {}
+        for colour in colours:
+            counts[colour] = counts.get(colour, 0) + 1
+
+        max_count = max(counts.values())
+        majority_colours = [colour for colour, count in counts.items()
+                             if count == max_count]
+
+        if len(majority_colours) != 1:
+            return False
+
+        majority_colour = majority_colours[0]
+        self.children = []
+        self.colour = majority_colour
+        return True
 
     def create_copy(self) -> Block:
         """Return a new Block that is a deep copy of this Block.
@@ -340,7 +430,11 @@ class Block:
         >>> block == copy
         True
         """
-        # TODO: Implement this method
+        new_block = Block(self.position, self.size, self.colour,
+                          self.level, self.max_depth)
+
+        new_block.children = [child.create_copy() for child in self.children]
+        return new_block
 
 
 if __name__ == '__main__':

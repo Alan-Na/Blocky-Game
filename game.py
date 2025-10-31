@@ -25,7 +25,14 @@ Blocky game.
 At the bottom of the file, there are some functions that you
 can call to try playing the game in several different configurations.
 """
-import pygame
+import importlib
+import importlib.util
+
+_pygame_spec = importlib.util.find_spec('pygame')
+if _pygame_spec is None:
+    import pygame_stub as pygame  # type: ignore[no-redef]
+else:
+    pygame = importlib.import_module('pygame')  # type: ignore[assignment]
 
 from block import generate_board
 from state import GameData, GameState, MainState
