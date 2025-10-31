@@ -39,6 +39,7 @@ COLOUR_LIST = [PACIFIC_POINT, REAL_RED, OLD_OLIVE, DAFFODIL_DELIGHT]
 BOARD_SIZE = 800
 
 # The background will be this colour.
+# Core theme colours for the in-game renderer.
 BACKGROUND_COLOUR = BLACK
 # Text will have this colour.
 TEXT_COLOUR = WHITE
@@ -50,6 +51,14 @@ OUTLINE_THICKNESS = 2
 HIGHLIGHT_COLOUR = TEMPTING_TURQUOISE
 # Highlighted blocks will have this thickness to the highlight.
 HIGHLIGHT_THICKNESS = 5
+
+# Extended palette used by the upgraded interface elements.
+PANEL_BACKGROUND = (17, 21, 31)
+PANEL_BORDER_COLOUR = (66, 90, 120)
+STATUS_BACKGROUND = (12, 16, 24)
+ACCENT_COLOUR = TEMPTING_TURQUOISE
+GRID_COLOUR = (32, 38, 54)
+MUTED_TEXT_COLOUR = (178, 188, 205)
 
 # The number of seconds a move is animated for.
 ANIMATION_DURATION = 1

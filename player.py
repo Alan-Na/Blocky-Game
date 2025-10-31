@@ -33,6 +33,10 @@ from actions import Action, KEY_ACTION, ROTATE_CLOCKWISE, \
     SWAP_HORIZONTAL, SWAP_VERTICAL, SMASH, PASS, PAINT, COMBINE
 
 
+_ACTION_SET = [ROTATE_CLOCKWISE, ROTATE_COUNTER_CLOCKWISE,
+               SWAP_HORIZONTAL, SWAP_VERTICAL, SMASH, PAINT, COMBINE]
+
+
 def create_players(num_human: int, num_random: int, smart_players: list[int]) \
         -> list[Player]:
     """Return a new list of Player objects.
@@ -51,9 +55,25 @@ def create_players(num_human: int, num_random: int, smart_players: list[int]) \
 
     Each player is assigned a random goal.
     """
-    # TODO: Implement this function
-    goals = generate_goals(1)  # FIXME
-    return [HumanPlayer(0, goals[0])]  # FIXME
+    total_players = num_human + num_random + len(smart_players)
+    goals = generate_goals(total_players)
+
+    players: list[Player] = []
+    goal_index = 0
+
+    for _ in range(num_human):
+        players.append(HumanPlayer(len(players), goals[goal_index]))
+        goal_index += 1
+
+    for _ in range(num_random):
+        players.append(RandomPlayer(len(players), goals[goal_index]))
+        goal_index += 1
+
+    for difficulty in smart_players:
+        players.append(SmartPlayer(len(players), goals[goal_index], difficulty))
+        goal_index += 1
+
+    return players
 
 
 def _get_block(block: Block, location: tuple[int, int], level: int) -> \
@@ -74,7 +94,60 @@ def _get_block(block: Block, location: tuple[int, int], level: int) -> \
     Preconditions:
         - block.level <= level <= block.max_depth
     """
-    # TODO: Implement this function
+    x, y = location
+    bx, by = block.position
+    size = block.size
+
+    if not (bx <= x < bx + size and by <= y < by + size):
+        return None
+
+    if block.level == level or len(block.children) == 0:
+        return block
+
+    half = block.child_size()
+
+    if x < bx + half:
+        if y < by + half:
+            child = block.children[1]
+        else:
+            child = block.children[2]
+    else:
+        if y < by + half:
+            child = block.children[0]
+        else:
+            child = block.children[3]
+
+    result = _get_block(child, location, level)
+    if result is None:
+        return child
+    return result
+
+
+def _collect_blocks(block: Block) -> list[Block]:
+    """Return a list of all blocks in the tree rooted at <block>."""
+    blocks = [block]
+    for child in block.children:
+        blocks.extend(_collect_blocks(child))
+    return blocks
+
+
+def _find_in_copy(board: Block, original: Block) -> Block | None:
+    """Return the block in <board> corresponding to <original>."""
+    return _get_block(board, original.position, original.level)
+
+
+def _valid_moves(board: Block, goal_colour: tuple[int, int, int]) -> \
+        list[tuple[Action, Block]]:
+    """Return all valid moves that can be performed on <board>."""
+    moves: list[tuple[Action, Block]] = []
+    for candidate in _collect_blocks(board):
+        for action in _ACTION_SET:
+            board_copy = board.create_copy()
+            copy_block = _find_in_copy(board_copy, candidate)
+            if copy_block is not None and action.apply(
+                    copy_block, {'colour': goal_colour}):
+                moves.append((action, candidate))
+    return moves
 
 
 class Player:
@@ -243,7 +316,16 @@ class RandomPlayer(ComputerPlayer):
 
         This function does not mutate <board>.
         """
-        # TODO: Implement this method
+        if not self._proceed:
+            return None
+
+        valid_moves = _valid_moves(board, self.goal.colour)
+        self._proceed = False
+
+        if not valid_moves:
+            return PASS, board
+
+        return random.choice(valid_moves)
 
 
 class SmartPlayer(ComputerPlayer):
@@ -267,7 +349,8 @@ class SmartPlayer(ComputerPlayer):
         Preconditions:
         - difficulty >= 0
         """
-        # TODO: Implement this method
+        ComputerPlayer.__init__(self, player_id, goal)
+        self._num_test = max(1, difficulty)
 
     def generate_move(self, board: Block) -> \
             tuple[Action, Block] | None:
@@ -281,7 +364,35 @@ class SmartPlayer(ComputerPlayer):
 
         This function does not mutate <board>.
         """
-        # TODO: Implement this method
+        if not self._proceed:
+            return None
+
+        valid_moves = _valid_moves(board, self.goal.colour)
+        current_score = self.goal.score(board)
+        best_move: tuple[Action, Block] | None = None
+        best_score = current_score
+
+        if valid_moves:
+            num_to_test = min(len(valid_moves), self._num_test)
+            candidates = random.sample(valid_moves, num_to_test)
+
+            for action, target_block in candidates:
+                board_copy = board.create_copy()
+                copy_block = _find_in_copy(board_copy, target_block)
+                if copy_block is None:
+                    continue
+
+                if action.apply(copy_block, {'colour': self.goal.colour}):
+                    score = self.goal.score(board_copy)
+                    if score > best_score:
+                        best_score = score
+                        best_move = (action, target_block)
+
+        self._proceed = False
+
+        if best_move is None:
+            return PASS, board
+        return best_move
 
 
 if __name__ == '__main__':
