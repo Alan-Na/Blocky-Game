@@ -22,7 +22,6 @@ Module Description:
 This file contains the hierarchy of Goal classes and related helper functions.
 """
 from __future__ import annotations
-import math
 import random
 from block import Block
 from settings import colour_name, COLOUR_LIST
@@ -38,8 +37,13 @@ def generate_goals(num_goals: int) -> list[Goal]:
     Preconditions:
     - num_goals <= len(COLOUR_LIST)
     """
-    # TODO: Implement this function
-    return [PerimeterGoal(COLOUR_LIST[0])]  # FIXME
+    if num_goals == 0:
+        return []
+
+    goal_type = random.choice([PerimeterGoal, BlobGoal])
+    colours = random.sample(COLOUR_LIST, num_goals)
+
+    return [goal_type(colour) for colour in colours]
 
 
 def flatten(block: Block) -> list[list[tuple[int, int, int]]]:
@@ -56,7 +60,26 @@ def flatten(block: Block) -> list[list[tuple[int, int, int]]]:
 
     L[0][0] represents the unit cell in the upper left corner of the Block.
     """
-    # TODO: Implement this function
+    size = 2 ** (block.max_depth - block.level)
+    grid: list[list[tuple[int, int, int]]] = [
+        [block.colour for _ in range(size)] for _ in range(size)
+    ]
+
+    def _fill(b: Block, x: int, y: int, span: int) -> None:
+        if len(b.children) == 0:
+            for i in range(x, x + span):
+                for j in range(y, y + span):
+                    grid[i][j] = b.colour
+        else:
+            half = span // 2
+            _fill(b.children[1], x, y, half)
+            _fill(b.children[0], x + half, y, half)
+            _fill(b.children[2], x, y + half, half)
+            _fill(b.children[3], x + half, y + half, half)
+
+    _fill(block, 0, 0, size)
+
+    return grid
 
 
 class Goal:
@@ -102,14 +125,29 @@ class PerimeterGoal(Goal):
         on the perimeter whose colour is this goal's target colour. Corner cells
         count twice toward the score.
         """
-        # TODO: Implement this method
-        return 148  # FIXME
+        grid = flatten(board)
+        size = len(grid)
+
+        score = 0
+        for x in range(size):
+            if grid[x][0] == self.colour:
+                score += 1
+            if grid[x][size - 1] == self.colour:
+                score += 1
+
+        for y in range(size):
+            if grid[0][y] == self.colour:
+                score += 1
+            if grid[size - 1][y] == self.colour:
+                score += 1
+
+        return score
 
     def description(self) -> str:
         """Return a description of this goal.
         """
-        # TODO: Implement this method
-        return 'DESCRIPTION'  # FIXME
+        colour = colour_name(self.colour)
+        return (f'Aim for {colour} along the perimeter; corners count twice.')
 
 
 class BlobGoal(Goal):
@@ -125,8 +163,20 @@ class BlobGoal(Goal):
         The score for a BlobGoal is defined to be the total number of
         unit cells in the largest connected blob within this Block.
         """
-        # TODO: Implement this method
-        return 148  # FIXME
+        grid = flatten(board)
+        size = len(grid)
+        visited = [[-1 for _ in range(size)] for _ in range(size)]
+
+        best = 0
+        for x in range(size):
+            for y in range(size):
+                if visited[x][y] == -1 and grid[x][y] == self.colour:
+                    blob_size = self._undiscovered_blob_size((x, y), grid,
+                                                             visited)
+                    if blob_size > best:
+                        best = blob_size
+
+        return best
 
     def _undiscovered_blob_size(self, pos: tuple[int, int],
                                 board: list[list[tuple[int, int, int]]],
@@ -149,13 +199,31 @@ class BlobGoal(Goal):
 
         If <pos> is out of bounds for <board>, return 0.
         """
-        # TODO: Implement this method
+        x, y = pos
+        if x < 0 or y < 0:
+            return 0
+        if x >= len(board) or y >= len(board):
+            return 0
+
+        if visited[x][y] != -1:
+            return 0
+
+        if board[x][y] != self.colour:
+            visited[x][y] = 0
+            return 0
+
+        visited[x][y] = 1
+        size = 1
+        for neighbour in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]:
+            size += self._undiscovered_blob_size(neighbour, board, visited)
+
+        return size
 
     def description(self) -> str:
         """Return a description of this goal.
         """
-        # TODO: Implement this method
-        return 'DESCRIPTION'  # FIXME
+        colour = colour_name(self.colour)
+        return f'Build the largest connected blob of {colour} blocks.'
 
 
 if __name__ == '__main__':
