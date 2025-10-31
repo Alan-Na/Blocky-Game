@@ -5,40 +5,36 @@ import pygame
 from block import Block
 from goal import Goal, generate_goals
 
-from actions import Action, KEY_ACTION, ROTATE_CLOCKWISE, \
-    ROTATE_COUNTER_CLOCKWISE, \
-    SWAP_HORIZONTAL, SWAP_VERTICAL, SMASH, PASS, PAINT, COMBINE
-
-COMPUTER_ACTIONS = [
-    ROTATE_CLOCKWISE,
-    ROTATE_COUNTER_CLOCKWISE,
-    SWAP_HORIZONTAL,
-    SWAP_VERTICAL,
-    SMASH,
-    COMBINE,
-    PAINT
-]
+from actions import Action, KEY_ACTION, PASS
+from move_utils import list_valid_moves, block_from_path
+from rl_agent import ReinforcementLearner
 
 
-def create_players(num_human: int, num_random: int, smart_players: list[int]) \
-        -> list[Player]:
+def create_players(num_human: int, num_random: int, smart_players: list[int],
+                   reinforced_levels: list[int] | None = None) -> list[Player]:
     """Return a new list of Player objects.
 
     <num_human> is the number of human player, <num_random> is the number of
     random players, and <smart_players> is a list of difficulty levels for each
-    SmartPlayer that is to be created.
+    SmartPlayer that is to be created. <reinforced_levels> contains the difficulty
+    settings for reinforced-learning-powered players.
 
     The list should contain <num_human> HumanPlayer objects first, then
     <num_random> RandomPlayer objects, then the same number of SmartPlayer
     objects as the length of <smart_players>. The difficulty levels in
     <smart_players> should be applied to each SmartPlayer object, in order.
+    Reinforced players appear after the classic smart players, in the order
+    provided by <reinforced_levels>.
 
     Player ids are given in the order that the players are created, starting
     at id 0.
 
     Each player is assigned a random goal.
     """
-    total = num_human + num_random + len(smart_players)
+    if reinforced_levels is None:
+        reinforced_levels = []
+
+    total = num_human + num_random + len(smart_players) + len(reinforced_levels)
     goals = generate_goals(total)
 
     players: list[Player] = []
@@ -57,6 +53,11 @@ def create_players(num_human: int, num_random: int, smart_players: list[int]) \
 
     for difficulty in smart_players:
         players.append(SmartPlayer(next_id, goals[goal_index], difficulty))
+        next_id += 1
+        goal_index += 1
+
+    for difficulty in reinforced_levels:
+        players.append(ReinforcedSmartPlayer(next_id, goals[goal_index], difficulty))
         next_id += 1
         goal_index += 1
 
@@ -268,12 +269,12 @@ class RandomPlayer(ComputerPlayer):
 
         self._proceed = False
 
-        moves = _valid_moves(board, self.goal.colour)
+        moves = list_valid_moves(board, self.goal.colour)
         if not moves:
             return PASS, board
 
         action, path = random.choice(moves)
-        target = _block_from_path(board, path)
+        target = block_from_path(board, path)
 
         return action, target
 
@@ -320,7 +321,7 @@ class SmartPlayer(ComputerPlayer):
         self._proceed = False
 
         current_score = self.goal.score(board)
-        moves = _valid_moves(board, self.goal.colour)
+        moves = list_valid_moves(board, self.goal.colour)
 
         if not moves:
             return PASS, board
@@ -331,7 +332,7 @@ class SmartPlayer(ComputerPlayer):
         for _ in range(self._num_test):
             action, path = random.choice(moves)
             board_copy = board.create_copy()
-            block_copy = _block_from_path(board_copy, path)
+            block_copy = block_from_path(board_copy, path)
             success = action.apply(block_copy, {'colour': self.goal.colour})
             if not success:
                 continue
@@ -345,63 +346,94 @@ class SmartPlayer(ComputerPlayer):
             return PASS, board
 
         action, path = best_move
-        target = _block_from_path(board, path)
+        target = block_from_path(board, path)
         return action, target
 
 
-def _valid_moves(board: Block,
-                 colour: tuple[int, int, int]) -> list[tuple[Action, tuple[int, ...]]]:
-    """Return all valid non-pass moves available on <board>."""
-    candidates: list[tuple[Action, tuple[int, ...]]] = []
+class ReinforcedSmartPlayer(ComputerPlayer):
+    """A computer player guided by a lightweight reinforcement learner.
 
-    for block, path in _blocks_with_paths(board):
-        for action in COMPUTER_ACTIONS:
-            if not _is_potential_move(action, block, colour):
-                continue
+    The learner evaluates candidate moves using a TD-trained value function and
+    a brief stochastic look-ahead to anticipate compound rewards.
+    """
 
-            board_copy = board.create_copy()
-            target_copy = _block_from_path(board_copy, path)
-            if action.apply(target_copy, {'colour': colour}):
-                candidates.append((action, path))
+    _learner: ReinforcementLearner
+    _simulation_depth: int
+    _rollout_samples: int
 
-    return candidates
+    def __init__(self, player_id: int, goal: Goal, difficulty: int) -> None:
+        super().__init__(player_id, goal)
+        difficulty = max(0, difficulty)
+        self._learner = ReinforcementLearner(goal, difficulty)
+        self._simulation_depth = max(1, difficulty // 2)
+        self._rollout_samples = max(1, 2 + difficulty // 2)
 
+    def generate_move(self, board: Block) -> \
+            tuple[Action, Block] | None:
+        if not self._proceed:
+            return None
 
-def _is_potential_move(action: Action, block: Block,
-                       colour: tuple[int, int, int]) -> bool:
-    """Quick checks to skip obviously invalid actions."""
-    if action in (ROTATE_CLOCKWISE, ROTATE_COUNTER_CLOCKWISE,
-                  SWAP_HORIZONTAL, SWAP_VERTICAL):
-        return len(block.children) != 0
-    if action is SMASH:
-        return block.smashable()
-    if action is COMBINE:
-        return len(block.children) != 0
-    if action is PAINT:
-        return (len(block.children) == 0 and block.level == block.max_depth
-                and block.colour != colour)
-    return True
+        self._proceed = False
 
+        moves = list_valid_moves(board, self.goal.colour)
+        if not moves:
+            return PASS, board
 
-def _blocks_with_paths(block: Block) -> list[tuple[Block, tuple[int, ...]]]:
-    """Return all blocks paired with their path from <block>."""
-    result: list[tuple[Block, tuple[int, ...]]] = []
+        baseline = self._learner.evaluate(board)
+        best_move: tuple[Action, tuple[int, ...]] | None = None
+        best_value = baseline
 
-    def helper(current: Block, path: tuple[int, ...]) -> None:
-        result.append((current, path))
-        for index, child in enumerate(current.children):
-            helper(child, path + (index,))
+        for action, path in moves:
+            estimate = self._evaluate_move(board, action, path)
+            if estimate > best_value:
+                best_value = estimate
+                best_move = (action, path)
 
-    helper(block, ())
-    return result
+        if best_move is None:
+            return PASS, board
 
+        action, path = best_move
+        target = block_from_path(board, path)
+        return action, target
 
-def _block_from_path(block: Block, path: tuple[int, ...]) -> Block:
-    """Return the block reached by following <path> from <block>."""
-    current = block
-    for index in path:
-        current = current.children[index]
-    return current
+    def _evaluate_move(self, board: Block, action: Action,
+                       path: tuple[int, ...]) -> float:
+        board_copy = board.create_copy()
+        block_copy = block_from_path(board_copy, path)
+        if not action.apply(block_copy, {'colour': self.goal.colour}):
+            return float('-inf')
+
+        value = self._learner.evaluate(board_copy)
+        value -= action.penalty * 0.3
+        value += self._rollout_bonus(board_copy)
+        return value
+
+    def _rollout_bonus(self, board: Block) -> float:
+        """Estimate additional value by sampling short stochastic rollouts."""
+        bonus = 0.0
+        for _ in range(self._rollout_samples):
+            temp_board = board.create_copy()
+            weight = 1.0
+            for depth in range(self._simulation_depth):
+                moves = list_valid_moves(temp_board, self.goal.colour)
+                if not moves:
+                    break
+                action, path = random.choice(moves)
+                next_board = temp_board.create_copy()
+                target = block_from_path(next_board, path)
+                if not action.apply(target, {'colour': self.goal.colour}):
+                    break
+
+                delta = (self._learner.evaluate(next_board)
+                         - self._learner.evaluate(temp_board)
+                         - action.penalty * 0.2)
+                bonus += weight * delta
+                weight *= self._learner.discount
+                temp_board = next_board
+
+        if self._rollout_samples > 0:
+            bonus /= self._rollout_samples
+        return bonus
 
 
 if __name__ == '__main__':
@@ -411,7 +443,7 @@ if __name__ == '__main__':
         'allowed-io': ['process_event'],
         'allowed-import-modules': [
             'doctest', 'python_ta', 'random', 'typing', 'actions', 'block',
-            'goal', 'pygame', '__future__'
+            'goal', 'pygame', '__future__', 'move_utils', 'rl_agent'
         ],
         'max-attributes': 10,
         'generated-members': 'pygame.*'

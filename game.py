@@ -1,7 +1,7 @@
 import pygame
 
 from block import generate_board
-from state import GameData, GameState, MainState
+from state import GameData, GameState, MainState, StartMenuState
 from player import create_players
 from renderer import Renderer
 from settings import BOARD_SIZE
@@ -35,7 +35,7 @@ class Game:
 
         self._renderer = Renderer(BOARD_SIZE)
         self._data = GameData(board, players)
-        self._state = MainState(self._data)
+        self._state = StartMenuState(self._data)
 
     def run_game(self, num_turns: int) -> None:
         """Start the main game loop and stop after num_turns.
@@ -54,7 +54,20 @@ class Game:
                 if e.type == pygame.QUIT:
                     return
                 else:
-                    self._state.process_event(e)
+                    handled = False
+                    if e.type == pygame.MOUSEWHEEL:
+                        mouse_pos = pygame.mouse.get_pos()
+                        if self._renderer.instruction_rect().collidepoint(mouse_pos):
+                            self._renderer.scroll_instruction(-e.y * 40)
+                            handled = True
+                    elif (e.type == pygame.MOUSEBUTTONDOWN
+                          and e.button == pygame.BUTTON_LEFT):
+                        if self._renderer.exit_button_rect().collidepoint(e.pos):
+                            self._state = StartMenuState(self._data)
+                            self._renderer.reset_exit_button()
+                            handled = True
+                    if not handled:
+                        self._state.process_event(e)
 
             # Update the state of the game
             self._state = self._state.update()
