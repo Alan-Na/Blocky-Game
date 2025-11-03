@@ -17,32 +17,9 @@ def block_bfs(block):
 
 class A2Test(unittest.TestCase):
     """
-    This class is the top level class for all the tests in the a2.  This class is mainly used to set up data and tear down
-    the data.  Also, we will encapsulate assertion functions build in the unittest into our own assertion Function.
+    This class is mainly used to set up data and tear down the data.  Also, we will encapsulate assertion functions build in the unittest into our own assertion Function.
     Write every test suites as a subclass of this TestClass to reuse the data.  For this assignment, we will write the
-    test suites based on the steps denoted in the handout.  Also write down every test case as an method.  Every subclass
-    should rewrite the import statements to only include necessary methods/functions
-    Formalizations:
-     i) Draw the tree of the question in the docstring.
-     ii) Write down the expected return value.
-     iii) Write the error message or segfault if students are not using debugger or you are too disappointed
-     iv) For functions that using random do the followings
-        i) Rewrite the import statement in the top level
-            eg) Import random from <source> as customized random
-        ii) Set up the seed
-            eg) customized_random.seed(seed_number)
-        iii) Write down the return value for the randomized function calls to make debug easier
-     v) For every customized assertion function follow the format of following
-        i) Every customized assertion function are passing three parameters
-        ii) The first parameter is the self/The Test class
-        iii) The second parameter is the test object to be verified(Normally this is going to be the attribute in the setUp)
-        iv) The third parameter is an iterable collection to be used to verify the result
-        v) The order for value in list of expected value should follow the same order as the docstring of the corresponding class
-        A template is
-        def assertFun(self, test_object, expected_result):
-            act = test_object.attribute0
-            exp = expected_result[0]
-            self.assertEqual(act, exp, self.error_message(act, exp)
+    test suites based on the steps denoted in the handout.  Also write down every test case as an method.
     === Attribute ===
     leaf_block: a block that itself is a leaf
     one_level: a block that contain one sub level
