@@ -86,3 +86,13 @@ def test_combine_majority_seed379940_depth3() -> None:
             assert block.colour == winners[0]
             assert not block.children
     _check_invariants(board)
+
+
+def test_rotation_cycle_seed452286_depth3() -> None:
+    """Four clockwise rotations bring the board back to where it started."""
+    board = _board(452286, 3)
+    original = board.create_copy()
+    for _ in range(4):
+        assert board.rotate(ROT_CW)
+    assert board == original
+    _check_invariants(board)
