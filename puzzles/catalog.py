@@ -12,5 +12,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Old Olive', moves=6),
     Puzzle(number=2, name='Crimson Harbor', seed=772799, max_depth=4,
            goal='blob', colour='Real Red', moves=9),
+    Puzzle(number=3, name='Lucky Lantern', seed=637970, max_depth=3,
+           goal='blob', colour='Old Olive', moves=4),
     # New puzzles are appended above this line.
 ]
