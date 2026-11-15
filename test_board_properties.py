@@ -69,3 +69,20 @@ def test_double_swap_seed810097_depth3() -> None:
         _check_invariants(board)
         assert board.swap(direction)
         assert board == original
+
+
+def test_combine_majority_seed379940_depth3() -> None:
+    """Combining keeps the most common child colour and refuses ties."""
+    board = _board(379940, 3)
+    parents = [b for b in _blocks(board)
+               if b.children and all(not c.children for c in b.children)]
+    assert parents
+    for block in parents:
+        counts = Counter(child.colour for child in block.children)
+        top = max(counts.values())
+        winners = [colour for colour, n in counts.items() if n == top]
+        assert block.combine() == (len(winners) == 1)
+        if len(winners) == 1:
+            assert block.colour == winners[0]
+            assert not block.children
+    _check_invariants(board)
