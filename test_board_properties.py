@@ -123,3 +123,19 @@ def test_combine_majority_seed726049_depth5() -> None:
             assert block.colour == winners[0]
             assert not block.children
     _check_invariants(board)
+
+
+def test_leaf_actions_seed870401_depth3() -> None:
+    """Only max-depth leaves take paint; shallower leaves can still be smashed."""
+    board = _board(870401, 3)
+    for leaf in _leaves(board):
+        other = next(c for c in COLOUR_LIST if c != leaf.colour)
+        if leaf.level == 3:
+            assert not leaf.smashable()
+            assert not leaf.smash()
+            assert leaf.paint(other)
+            assert leaf.colour == other
+            assert not leaf.paint(other)
+        else:
+            assert leaf.smashable()
+            assert not leaf.paint(other)
