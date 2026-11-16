@@ -158,3 +158,15 @@ def test_rotation_cycle_seed717715_depth2() -> None:
         assert board.rotate(ROT_CW)
     assert board == original
     _check_invariants(board)
+
+
+def test_colour_conservation_seed182301_depth3() -> None:
+    """Swaps and rotations move cells around without changing colour counts."""
+    board = _board(182301, 3)
+    before = _colour_counts(board)
+    assert board.swap(SWAP_HORZ)
+    assert board.rotate(ROT_CW)
+    assert board.swap(SWAP_VERT)
+    assert board.rotate(ROT_CCW)
+    assert _colour_counts(board) == before
+    _check_invariants(board)
