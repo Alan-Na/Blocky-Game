@@ -148,3 +148,13 @@ def test_perimeter_total_seed476167_depth2() -> None:
     scores = [PerimeterGoal(colour).score(board) for colour in COLOUR_LIST]
     assert all(0 <= score <= 4 * cells for score in scores)
     assert sum(scores) == 4 * cells
+
+
+def test_rotation_cycle_seed717715_depth2() -> None:
+    """Four clockwise rotations bring the board back to where it started."""
+    board = _board(717715, 2)
+    original = board.create_copy()
+    for _ in range(4):
+        assert board.rotate(ROT_CW)
+    assert board == original
+    _check_invariants(board)
