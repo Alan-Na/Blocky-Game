@@ -170,3 +170,13 @@ def test_colour_conservation_seed182301_depth3() -> None:
     assert board.rotate(ROT_CCW)
     assert _colour_counts(board) == before
     _check_invariants(board)
+
+
+def test_rotation_undo_seed604759_depth4() -> None:
+    """A counter-clockwise rotation undoes a clockwise one."""
+    board = _board(604759, 4)
+    original = board.create_copy()
+    assert board.rotate(ROT_CW)
+    _check_invariants(board)
+    assert board.rotate(ROT_CCW)
+    assert board == original
