@@ -139,3 +139,12 @@ def test_leaf_actions_seed870401_depth3() -> None:
         else:
             assert leaf.smashable()
             assert not leaf.paint(other)
+
+
+def test_perimeter_total_seed476167_depth2() -> None:
+    """Perimeter scores over the whole palette add up to the perimeter length."""
+    board = _board(476167, 2)
+    cells = 2 ** 2
+    scores = [PerimeterGoal(colour).score(board) for colour in COLOUR_LIST]
+    assert all(0 <= score <= 4 * cells for score in scores)
+    assert sum(scores) == 4 * cells
