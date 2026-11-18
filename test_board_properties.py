@@ -190,3 +190,14 @@ def test_flatten_shape_seed522639_depth2() -> None:
     for column in grid:
         assert len(column) == cells
         assert all(cell in COLOUR_LIST for cell in column)
+
+
+def test_double_swap_seed476238_depth3() -> None:
+    """Swapping twice in the same direction leaves the board unchanged."""
+    for direction in (SWAP_HORZ, SWAP_VERT):
+        board = _board(476238, 3)
+        original = board.create_copy()
+        assert board.swap(direction)
+        _check_invariants(board)
+        assert board.swap(direction)
+        assert board == original
