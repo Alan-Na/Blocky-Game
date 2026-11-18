@@ -20,5 +20,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Old Olive', moves=5),
     Puzzle(number=6, name='Lonely Orchard', seed=515449, max_depth=2,
            goal='blob', colour='Daffodil Delight', moves=4),
+    Puzzle(number=7, name='Frozen Courtyard', seed=673022, max_depth=4,
+           goal='blob', colour='Daffodil Delight', moves=7),
     # New puzzles are appended above this line.
 ]
