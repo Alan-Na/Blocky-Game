@@ -16,5 +16,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Old Olive', moves=4),
     Puzzle(number=4, name='Copper Atrium', seed=843365, max_depth=3,
            goal='perimeter', colour='Real Red', moves=7),
+    Puzzle(number=5, name='Narrow Maze', seed=206377, max_depth=4,
+           goal='blob', colour='Old Olive', moves=5),
     # New puzzles are appended above this line.
 ]
