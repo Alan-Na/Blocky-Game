@@ -28,5 +28,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Daffodil Delight', moves=6),
     Puzzle(number=10, name='Frozen Ridge', seed=335386, max_depth=3,
            goal='perimeter', colour='Real Red', moves=5),
+    Puzzle(number=11, name='Restless Harbor', seed=588213, max_depth=2,
+           goal='blob', colour='Daffodil Delight', moves=4),
     # New puzzles are appended above this line.
 ]
