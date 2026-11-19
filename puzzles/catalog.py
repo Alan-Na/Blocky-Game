@@ -26,5 +26,7 @@ PUZZLES: list[Puzzle] = [
            goal='perimeter', colour='Daffodil Delight', moves=6),
     Puzzle(number=9, name='Tangled Station', seed=181100, max_depth=3,
            goal='blob', colour='Daffodil Delight', moves=6),
+    Puzzle(number=10, name='Frozen Ridge', seed=335386, max_depth=3,
+           goal='perimeter', colour='Real Red', moves=5),
     # New puzzles are appended above this line.
 ]
