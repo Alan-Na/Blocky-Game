@@ -201,3 +201,13 @@ def test_double_swap_seed476238_depth3() -> None:
         _check_invariants(board)
         assert board.swap(direction)
         assert board == original
+
+
+def test_flatten_shape_seed33777_depth2() -> None:
+    """Flattening gives a square grid of palette colours, 2**depth wide."""
+    grid = flatten(_board(33777, 2))
+    cells = 2 ** 2
+    assert len(grid) == cells
+    for column in grid:
+        assert len(column) == cells
+        assert all(cell in COLOUR_LIST for cell in column)
