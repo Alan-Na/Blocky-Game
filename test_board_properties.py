@@ -211,3 +211,12 @@ def test_flatten_shape_seed33777_depth2() -> None:
     for column in grid:
         assert len(column) == cells
         assert all(cell in COLOUR_LIST for cell in column)
+
+
+def test_perimeter_total_seed494713_depth4() -> None:
+    """Perimeter scores over the whole palette add up to the perimeter length."""
+    board = _board(494713, 4)
+    cells = 2 ** 4
+    scores = [PerimeterGoal(colour).score(board) for colour in COLOUR_LIST]
+    assert all(0 <= score <= 4 * cells for score in scores)
+    assert sum(scores) == 4 * cells
