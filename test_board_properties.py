@@ -220,3 +220,13 @@ def test_perimeter_total_seed494713_depth4() -> None:
     scores = [PerimeterGoal(colour).score(board) for colour in COLOUR_LIST]
     assert all(0 <= score <= 4 * cells for score in scores)
     assert sum(scores) == 4 * cells
+
+
+def test_rotation_undo_seed218506_depth5() -> None:
+    """A counter-clockwise rotation undoes a clockwise one."""
+    board = _board(218506, 5)
+    original = board.create_copy()
+    assert board.rotate(ROT_CW)
+    _check_invariants(board)
+    assert board.rotate(ROT_CCW)
+    assert board == original
