@@ -34,5 +34,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Daffodil Delight', moves=4),
     Puzzle(number=13, name='Restless Market', seed=968619, max_depth=3,
            goal='blob', colour='Old Olive', moves=6),
+    Puzzle(number=14, name='Broken Terrace', seed=529862, max_depth=3,
+           goal='perimeter', colour='Pacific Point', moves=5),
     # New puzzles are appended above this line.
 ]
