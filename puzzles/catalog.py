@@ -32,5 +32,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Daffodil Delight', moves=4),
     Puzzle(number=12, name='Frozen Meadow', seed=884059, max_depth=3,
            goal='blob', colour='Daffodil Delight', moves=4),
+    Puzzle(number=13, name='Restless Market', seed=968619, max_depth=3,
+           goal='blob', colour='Old Olive', moves=6),
     # New puzzles are appended above this line.
 ]
