@@ -40,5 +40,7 @@ PUZZLES: list[Puzzle] = [
            goal='perimeter', colour='Daffodil Delight', moves=4),
     Puzzle(number=16, name='Broken Bridge', seed=160755, max_depth=3,
            goal='blob', colour='Old Olive', moves=4),
+    Puzzle(number=17, name='Sunken Terrace', seed=62942, max_depth=2,
+           goal='perimeter', colour='Daffodil Delight', moves=5),
     # New puzzles are appended above this line.
 ]
