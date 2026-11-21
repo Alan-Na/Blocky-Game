@@ -240,3 +240,13 @@ def test_rotation_cycle_seed406755_depth3() -> None:
         assert board.rotate(ROT_CW)
     assert board == original
     _check_invariants(board)
+
+
+def test_flatten_shape_seed947782_depth2() -> None:
+    """Flattening gives a square grid of palette colours, 2**depth wide."""
+    grid = flatten(_board(947782, 2))
+    cells = 2 ** 2
+    assert len(grid) == cells
+    for column in grid:
+        assert len(column) == cells
+        assert all(cell in COLOUR_LIST for cell in column)
