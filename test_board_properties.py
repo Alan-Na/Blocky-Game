@@ -309,3 +309,14 @@ def test_perimeter_total_seed165701_depth5() -> None:
     scores = [PerimeterGoal(colour).score(board) for colour in COLOUR_LIST]
     assert all(0 <= score <= 4 * cells for score in scores)
     assert sum(scores) == 4 * cells
+
+
+def test_double_swap_seed120405_depth4() -> None:
+    """Swapping twice in the same direction leaves the board unchanged."""
+    for direction in (SWAP_HORZ, SWAP_VERT):
+        board = _board(120405, 4)
+        original = board.create_copy()
+        assert board.swap(direction)
+        _check_invariants(board)
+        assert board.swap(direction)
+        assert board == original
