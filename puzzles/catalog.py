@@ -46,5 +46,7 @@ PUZZLES: list[Puzzle] = [
            goal='perimeter', colour='Daffodil Delight', moves=7),
     Puzzle(number=19, name='Sunken Workshop', seed=919800, max_depth=3,
            goal='perimeter', colour='Pacific Point', moves=7),
+    Puzzle(number=20, name='Twisted Harbor', seed=782580, max_depth=3,
+           goal='perimeter', colour='Daffodil Delight', moves=4),
     # New puzzles are appended above this line.
 ]
