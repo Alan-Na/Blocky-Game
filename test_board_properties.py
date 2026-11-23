@@ -320,3 +320,15 @@ def test_double_swap_seed120405_depth4() -> None:
         _check_invariants(board)
         assert board.swap(direction)
         assert board == original
+
+
+def test_copy_independence_seed585787_depth2() -> None:
+    """A copy equals the board but shares none of its blocks."""
+    board = _board(585787, 2)
+    duplicate = board.create_copy()
+    assert duplicate == board
+    assert not ({id(b) for b in _blocks(board)}
+                & {id(b) for b in _blocks(duplicate)})
+    duplicate.rotate(ROT_CW)
+    duplicate.swap(SWAP_HORZ)
+    assert board == _board(585787, 2)
