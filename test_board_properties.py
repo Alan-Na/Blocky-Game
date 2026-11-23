@@ -349,3 +349,12 @@ def test_combine_majority_seed205560_depth3() -> None:
             assert block.colour == winners[0]
             assert not block.children
     _check_invariants(board)
+
+
+def test_invariants_seed935675_depth4() -> None:
+    """A freshly generated board satisfies every Block invariant."""
+    board = _board(935675, 4)
+    _check_invariants(board)
+    assert board.position == (0, 0)
+    assert board.size == BOARD_SIZE
+    assert board.max_depth == 4
