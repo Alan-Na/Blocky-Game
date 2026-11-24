@@ -380,3 +380,13 @@ def test_rotation_cycle_seed253779_depth3() -> None:
         assert board.rotate(ROT_CW)
     assert board == original
     _check_invariants(board)
+
+
+def test_rotation_scores_seed723462_depth2() -> None:
+    """Rotating the whole board leaves every goal score unchanged."""
+    board = _board(723462, 2)
+    goals = [goal(colour) for goal in (PerimeterGoal, BlobGoal)
+             for colour in COLOUR_LIST]
+    before = [goal.score(board) for goal in goals]
+    assert board.rotate(ROT_CW)
+    assert [goal.score(board) for goal in goals] == before
