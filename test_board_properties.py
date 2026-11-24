@@ -390,3 +390,19 @@ def test_rotation_scores_seed723462_depth2() -> None:
     before = [goal.score(board) for goal in goals]
     assert board.rotate(ROT_CW)
     assert [goal.score(board) for goal in goals] == before
+
+
+def test_leaf_actions_seed842748_depth5() -> None:
+    """Only max-depth leaves take paint; shallower leaves can still be smashed."""
+    board = _board(842748, 5)
+    for leaf in _leaves(board):
+        other = next(c for c in COLOUR_LIST if c != leaf.colour)
+        if leaf.level == 5:
+            assert not leaf.smashable()
+            assert not leaf.smash()
+            assert leaf.paint(other)
+            assert leaf.colour == other
+            assert not leaf.paint(other)
+        else:
+            assert leaf.smashable()
+            assert not leaf.paint(other)
