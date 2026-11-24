@@ -406,3 +406,13 @@ def test_leaf_actions_seed842748_depth5() -> None:
         else:
             assert leaf.smashable()
             assert not leaf.paint(other)
+
+
+def test_rotation_scores_seed763524_depth2() -> None:
+    """Rotating the whole board leaves every goal score unchanged."""
+    board = _board(763524, 2)
+    goals = [goal(colour) for goal in (PerimeterGoal, BlobGoal)
+             for colour in COLOUR_LIST]
+    before = [goal.score(board) for goal in goals]
+    assert board.rotate(ROT_CW)
+    assert [goal.score(board) for goal in goals] == before
