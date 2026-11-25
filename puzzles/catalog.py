@@ -52,5 +52,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Old Olive', moves=4),
     Puzzle(number=22, name='Restless Archive', seed=317510, max_depth=3,
            goal='perimeter', colour='Pacific Point', moves=4),
+    Puzzle(number=23, name='Broken Workshop', seed=872231, max_depth=3,
+           goal='perimeter', colour='Old Olive', moves=6),
     # New puzzles are appended above this line.
 ]
