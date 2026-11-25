@@ -50,5 +50,7 @@ PUZZLES: list[Puzzle] = [
            goal='perimeter', colour='Daffodil Delight', moves=4),
     Puzzle(number=21, name='Patient Terrace', seed=825233, max_depth=2,
            goal='blob', colour='Old Olive', moves=4),
+    Puzzle(number=22, name='Restless Archive', seed=317510, max_depth=3,
+           goal='perimeter', colour='Pacific Point', moves=4),
     # New puzzles are appended above this line.
 ]
