@@ -443,3 +443,13 @@ def test_rotation_undo_seed667596_depth5() -> None:
     _check_invariants(board)
     assert board.rotate(ROT_CCW)
     assert board == original
+
+
+def test_rotation_scores_seed758753_depth2() -> None:
+    """Rotating the whole board leaves every goal score unchanged."""
+    board = _board(758753, 2)
+    goals = [goal(colour) for goal in (PerimeterGoal, BlobGoal)
+             for colour in COLOUR_LIST]
+    before = [goal.score(board) for goal in goals]
+    assert board.rotate(ROT_CW)
+    assert [goal.score(board) for goal in goals] == before
