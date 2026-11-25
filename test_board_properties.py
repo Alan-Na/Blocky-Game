@@ -453,3 +453,15 @@ def test_rotation_scores_seed758753_depth2() -> None:
     before = [goal.score(board) for goal in goals]
     assert board.rotate(ROT_CW)
     assert [goal.score(board) for goal in goals] == before
+
+
+def test_copy_independence_seed718866_depth2() -> None:
+    """A copy equals the board but shares none of its blocks."""
+    board = _board(718866, 2)
+    duplicate = board.create_copy()
+    assert duplicate == board
+    assert not ({id(b) for b in _blocks(board)}
+                & {id(b) for b in _blocks(duplicate)})
+    duplicate.rotate(ROT_CW)
+    duplicate.swap(SWAP_HORZ)
+    assert board == _board(718866, 2)
