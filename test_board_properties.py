@@ -433,3 +433,13 @@ def test_combine_majority_seed98532_depth3() -> None:
             assert block.colour == winners[0]
             assert not block.children
     _check_invariants(board)
+
+
+def test_rotation_undo_seed667596_depth5() -> None:
+    """A counter-clockwise rotation undoes a clockwise one."""
+    board = _board(667596, 5)
+    original = board.create_copy()
+    assert board.rotate(ROT_CW)
+    _check_invariants(board)
+    assert board.rotate(ROT_CCW)
+    assert board == original
