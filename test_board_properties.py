@@ -498,3 +498,13 @@ def test_leaf_actions_seed253379_depth3() -> None:
         else:
             assert leaf.smashable()
             assert not leaf.paint(other)
+
+
+def test_rotation_cycle_seed22146_depth2() -> None:
+    """Four clockwise rotations bring the board back to where it started."""
+    board = _board(22146, 2)
+    original = board.create_copy()
+    for _ in range(4):
+        assert board.rotate(ROT_CW)
+    assert board == original
+    _check_invariants(board)
