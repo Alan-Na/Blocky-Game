@@ -58,5 +58,7 @@ PUZZLES: list[Puzzle] = [
            goal='blob', colour='Old Olive', moves=5),
     Puzzle(number=25, name='Spiral Meadow', seed=358535, max_depth=2,
            goal='blob', colour='Old Olive', moves=4),
+    Puzzle(number=26, name='Lucky Station', seed=372044, max_depth=4,
+           goal='perimeter', colour='Real Red', moves=6),
     # New puzzles are appended above this line.
 ]
