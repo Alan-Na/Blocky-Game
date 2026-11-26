@@ -465,3 +465,20 @@ def test_copy_independence_seed718866_depth2() -> None:
     duplicate.rotate(ROT_CW)
     duplicate.swap(SWAP_HORZ)
     assert board == _board(718866, 2)
+
+
+def test_combine_majority_seed711147_depth2() -> None:
+    """Combining keeps the most common child colour and refuses ties."""
+    board = _board(711147, 2)
+    parents = [b for b in _blocks(board)
+               if b.children and all(not c.children for c in b.children)]
+    assert parents
+    for block in parents:
+        counts = Counter(child.colour for child in block.children)
+        top = max(counts.values())
+        winners = [colour for colour, n in counts.items() if n == top]
+        assert block.combine() == (len(winners) == 1)
+        if len(winners) == 1:
+            assert block.colour == winners[0]
+            assert not block.children
+    _check_invariants(board)
