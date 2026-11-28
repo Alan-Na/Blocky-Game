@@ -62,5 +62,7 @@ PUZZLES: list[Puzzle] = [
            goal='perimeter', colour='Real Red', moves=6),
     Puzzle(number=27, name='Scattered Archive', seed=260660, max_depth=3,
            goal='perimeter', colour='Real Red', moves=5),
+    Puzzle(number=28, name='Mirrored Gallery', seed=122132, max_depth=3,
+           goal='blob', colour='Old Olive', moves=7),
     # New puzzles are appended above this line.
 ]
