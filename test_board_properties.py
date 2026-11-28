@@ -508,3 +508,13 @@ def test_rotation_cycle_seed22146_depth2() -> None:
         assert board.rotate(ROT_CW)
     assert board == original
     _check_invariants(board)
+
+
+def test_rotation_cycle_seed118955_depth2() -> None:
+    """Four clockwise rotations bring the board back to where it started."""
+    board = _board(118955, 2)
+    original = board.create_copy()
+    for _ in range(4):
+        assert board.rotate(ROT_CW)
+    assert board == original
+    _check_invariants(board)
