@@ -518,3 +518,12 @@ def test_rotation_cycle_seed118955_depth2() -> None:
         assert board.rotate(ROT_CW)
     assert board == original
     _check_invariants(board)
+
+
+def test_perimeter_total_seed640035_depth2() -> None:
+    """Perimeter scores over the whole palette add up to the perimeter length."""
+    board = _board(640035, 2)
+    cells = 2 ** 2
+    scores = [PerimeterGoal(colour).score(board) for colour in COLOUR_LIST]
+    assert all(0 <= score <= 4 * cells for score in scores)
+    assert sum(scores) == 4 * cells
